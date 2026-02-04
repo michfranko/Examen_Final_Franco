@@ -17,22 +17,37 @@ spec:
     spec:
       containers:
         - name: redis
-          image: bitnami/redis:7
+          image: redis:7-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6379
               name: redis
-          env:
-            - name: ALLOW_EMPTY_PASSWORD
-              value: "no"
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: redis-secret
-                  key: redis-password
+          command:
+            - redis-server
+            - "--requirepass"
+            - "SuperS3cret123!"
           volumeMounts:
             - name: data
-              mountPath: /bitnami/redis/data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 5
   volumeClaimTemplates:
     - metadata:
         name: data

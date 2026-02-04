@@ -1,0 +1,10 @@
+FROM rediscommander/redis-commander:latest
+
+# El Dockerfile base ya contiene todo lo necesario
+# Las variables de entorno se inyectarán en tiempo de ejecución:
+# - REDIS_HOSTS: especifica los hosts Redis a conectar
+# - puerto 8081 por defecto
+
+# Etiquetas para documentación
+LABEL description="Redis Commander - Interfaz web para visualizar datos en Redis"
+LABEL maintainer="Equipo de Infraestructura"

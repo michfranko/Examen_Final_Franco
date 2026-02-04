@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Capa de Persistencia: Redis
+  redis:
+    image: bitnami/redis:7
+    container_name: examen-redis
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=no
+      - REDIS_PASSWORD=SuperS3cret123!
+    volumes:
+      - redis_data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "SuperS3cret123!", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitoring
+
+  # Microservicio Productor: Sensor simulado
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: examen-producer
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=SuperS3cret123!
+      - SENSOR_ID=rbt-01
+      - PUSH_INTERVAL=3
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - monitoring
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Microservicio Visualizador: Redis Commander
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: examen-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis://:SuperS3cret123!@redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  monitoring:
+    driver: bridge

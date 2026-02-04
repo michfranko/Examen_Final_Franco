@@ -18,20 +18,23 @@ spec:
         - name: redis-commander
           image: rediscommander/redis-commander:latest
           imagePullPolicy: IfNotPresent
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: redis-secret
-                  key: redis-password
-          command: ["sh","-c"]
-          args:
-            - |
-              export REDIS_HOSTS="local:redis://:$REDIS_PASSWORD@redis:6379" && \
-              redis-commander --port 8081 --www 0.0.0.0
           ports:
             - containerPort: 8081
               name: web
+          env:
+            - name: REDIS
+              value: "redis-cluster"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: "SuperS3cret123!"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
 
 ---
 apiVersion: v1

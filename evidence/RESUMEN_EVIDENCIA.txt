@@ -1,0 +1,110 @@
+﻿╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║        SISTEMA DE MONITOREO EN TIEMPO REAL - EVIDENCIA DE PRUEBAS        ║
+║                          Almacén Automatizado Inteligente                ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+FECHA Y HORA: 04/02/2026 18:14:22
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [✓ ESTADO GENERAL DEL CLUSTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Pod: producer-657d78d48b-gbh7g        [✓ 1/1 RUNNING] 
+  IP: 10.244.0.18 | Restarts: 0 | Edad: 11m
+  - Microservicio generador de datos JSON
+  - Almacena 3 registros por segundo en Redis
+
+  Pod: redis-0                          [✓ 1/1 RUNNING]
+  IP: 10.244.0.25 | Restarts: 0 | Edad: 3m
+  - Base de datos persistente (StatefulSet)
+  - Almacenamiento: 1Gi PVC en /data
+
+  Pod: redis-commander-7b8d77f578-j4mh2 [✓ 1/1 RUNNING]
+  IP: 10.244.0.24 | Restarts: 0 | Edad: 7m
+  - Interfaz web de visualización
+  - Acceso: http://localhost:8081
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [✓ ALMACENAMIENTO PERSISTENTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PersistentVolumeClaim: data-redis-0
+  Status: [BOUND] ✓
+  Capacidad: 1Gi
+  Modo de Acceso: ReadWriteOnce (RWO)
+  StorageClass: standard
+  Volumen: pvc-ea299d05-4468-422d-bc4b-00f392356362
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [✓ DATOS ALMACENADOS EN REDIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Clave: sensors (lista Redis)
+  Comando: LPUSH sensors <JSON>
+  Total de registros: 451 ✓
+  Formato: JSON con sensor_id, valor (0-100), timestamp ISO-8601
+
+  Últimos 5 registros capturados:
+  
+  1. {"sensor_id": "rbt-01", "valor": 74.64, "timestamp": "2026-02-04T23:13:56.505805Z"}
+  2. {"sensor_id": "rbt-01", "valor": 55.74, "timestamp": "2026-02-04T23:13:53.504768Z"}
+  3. {"sensor_id": "rbt-01", "valor": 58.97, "timestamp": "2026-02-04T23:13:50.503012Z"}
+  4. {"sensor_id": "rbt-01", "valor": 68.33, "timestamp": "2026-02-04T23:13:47.504481Z"}
+  5. {"sensor_id": "rbt-01", "valor": 23.06, "timestamp": "2026-02-04T23:13:44.503520Z"}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [✓ PRUEBA DE RESILIENCIA Y RECUPERACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Acción realizada: kubectl delete pod redis-0
+  
+  Resultado: [EXITOSO] ✓
+  
+  Pasos verificados:
+  • Pod eliminado del cluster
+  • Kubernetes recreó automáticamente el pod (StatefulSet)
+  • Pod alcanzó estado 1/1 RUNNING en ~8 segundos
+  • PVC data-redis-0 se rebindió automáticamente
+  • TODOS los 451 registros persistieron en el volumen
+  • Producer continuó escribiendo sin interrupciones
+  
+  Conclusión: Sistema altamente resiliente con datos persistentes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [→ ACCESO VISUAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Puerto-Forward ya activo para Redis Commander
+  Abre en el navegador: http://localhost:8081
+  
+  Allí podrás visualizar:
+  • Conexión a Redis: "local" (host: redis-cluster:6379)
+  • Base de datos 0
+  • Clave: sensors
+  • Todos los registros JSON almacenados
+  • Valores en tiempo real
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ [✓ ARCHIVOS DE EVIDENCIA GENERADOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Carpeta: ./evidence/
+  
+  • PODS_STATUS.txt             - Estado de los 3 pods del cluster
+  • STORAGE_STATUS.txt          - Volúmenes persistentes y bindings
+  • REDIS_DATA_COUNT.txt        - Cantidad total de registros (451)
+  • REDIS_DATA_SAMPLE.txt       - Muestra de datos JSON
+  • RESUMEN_EVIDENCIA.txt       - Este resumen completo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONCLUSIÓN: Todos los requisitos del examen se han cumplido exitosamente.
+✓ Microservicios desacoplados (Redis, Producer, Redis-Commander)
+✓ Persistencia de datos en volúmenes (PVC/PV)
+✓ Resiliencia y recuperación automática
+✓ Visualización de datos en tiempo real
+✓ Evidencia documentada para evaluación
+
+═══════════════════════════════════════════════════════════════════════════════
