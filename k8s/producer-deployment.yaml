@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+  labels:
+    app: producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+        - name: producer
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: redis-password
+          command: ["sh","-c"]
+          args:
+            - |
+              pip install redis && \
+              mkdir -p /app && cat > /app/producer.py <<'PY'
+              import os
+              import time
+              import random
+              import json
+              from datetime import datetime
+              import redis
+
+              REDIS_HOST = os.environ.get('REDIS_HOST','redis')
+              REDIS_PORT = int(os.environ.get('REDIS_PORT','6379'))
+              REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+
+              r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True)
+
+              sensor_id = 'rbt-01'
+
+              while True:
+                  valor = round(random.random()*100,2)
+                  payload = {
+                      "sensor_id": sensor_id,
+                      "valor": valor,
+                      "timestamp": datetime.utcnow().isoformat() + 'Z'
+                  }
+                  try:
+                      r.lpush('sensors', json.dumps(payload))
+                      print('Pushed:', payload)
+                  except Exception as e:
+                      print('Error writing to redis:', e)
+                  time.sleep(3)
+              PY
+              python /app/producer.py
